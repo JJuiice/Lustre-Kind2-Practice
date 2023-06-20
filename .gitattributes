@@ -1,0 +1,15 @@
+# Automatically handle line endings for files detected as text
+*   text=auto
+
+# Git
+.gitignore
+.gitattributes
+
+# Markdown
+*.md    text diff=markdown
+
+# License
+LICENSE text
+
+# Lustre
+*.lus   text

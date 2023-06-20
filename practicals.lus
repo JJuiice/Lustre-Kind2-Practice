@@ -1,0 +1,83 @@
+-- node
+-- input stream -- [node]  -----> output stream
+
+-- streams are sequences of x1 x2 x3 ...
+
+-- `false` is a stream 0 0 0 0 0 0 ...
+-- `true` is a stream 1 1 1 1 1 1 ...
+
+-- followed by
+-- ->
+-- pre
+
+node Delay(X:bool) returns (Y:bool);
+let
+   -- if X = x1 x2 x3 ..., then pre X means:
+   -- nil x1 x2 x3 ...
+   -- to fix the problem with nil, we use the composition operator ->
+   Y = false -> pre X;
+   -- stream1 is a1 a2 a3 ...
+   -- stream2 is b1 b2 b3 ...
+   -- then stream1 -> stream2 means:
+   -- a1 b2 b3 b4 ...
+   -- So false -> pre (x1 x2 x3) means:
+   -- (0 0 0 ...) -> (nil x1 x2 x3)
+   -- gives
+   -- 0 x1 x2 x3
+tel
+
+node Delay2(X:bool) returns (Y:bool);
+let
+    Y = Delay(Delay(X));
+    -- This would essentially translate to this: Y = false -> pre (false -> pre X);
+tel
+
+node RisingEdge(X:bool) returns (Y:bool);
+let
+    Y = X -> ((pre not X) and X);
+    -- X = x1 x2 x3
+    -- not X = (not x1) (not x2) (not x3) ...
+    -- pre not X = nil (not x1) (not x2) (not x3) ...
+    -- (pre not X) and X = (nil (not x1) (not x2) ...) and (x1 x2 x3 ...) = (nil and x1) ((not x1) and x2) ((not x2) and x3) ...
+    -- X -> (pre not X) and X = (x1 (not x1) (not x2) ...) and (x1 x2 x3 ...) = (x1 and x1) ((not x1) and x2) ((not x2) and x3) ...
+tel
+
+node FallingEdge(X:bool) returns (Y:bool);
+let
+    -- We can just invert the input graph and use the RisingEdge detection logic in order to implement FallingEdge logic
+    Y = RisingEdge(not X);
+tel
+
+-- Detector outputs low until input is 1 where detector is then perminently high
+node Detector(X:bool) returns (Y:bool);
+let
+    Y = X -> X or pre Y;
+tel
+
+-- The next examples will be used to demonstrate usage of Kind2 with Lustre
+
+node SwitchS(init, set, reset: bool) returns (level:bool);
+-- this implementation was written by Sonya
+let
+    level = init -> (if set then true
+                     else if reset then false
+                     else pre level);
+tel
+
+node SwitchR(init, set, reset: bool) returns (level:bool);
+-- this implementation was written by Ron
+let
+    level = init -> (if reset then false
+                     else if set then true
+                     else pre level);
+tel
+
+node Cmp(init, set, reset: bool) returns (diff:bool; s:bool; r:bool);
+-- var s:bool;
+    -- r:bool;
+let
+    s = SwitchS(init, set, reset);
+    r = SwitchR(init, set, reset);
+    diff = (s <> r);
+--%PROPERTY diff=false;
+tel
