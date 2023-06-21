@@ -81,3 +81,18 @@ let
     diff = (s <> r);
 --%PROPERTY diff=false;
 tel
+
+node Counter(X:bool) returns (C:int)
+let
+    C = (if X then 1 else 0) -> (if X then (pre C + 1)
+                                 else pre C);
+tel
+
+node Counter2(init:int; incr:int; X:bool; reset:bool) returns (C:int)
+var PC:int;
+let
+    PC = init -> pre C;
+    C = if reset then init
+        else if X then PC + incr 
+        else PC;
+tel
